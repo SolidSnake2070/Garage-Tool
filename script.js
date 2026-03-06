@@ -630,18 +630,47 @@ function markBikeFieldError(id) {
 }
 
 function createBike() {
+  clearBikeFormFeedback();
+
   const name = document.getElementById("newBikeName").value.trim();
   const brand = document.getElementById("newBikeBrand").value.trim();
-  const year = Number(document.getElementById("newBikeYear").value);
+  const yearRaw = document.getElementById("newBikeYear").value.trim();
   const category = document.getElementById("newBikeCategory").value;
   const manualType = document.getElementById("newBikeType").value.trim();
   const manualUnit = document.getElementById("newBikeUnit").value;
-  const current = Number(document.getElementById("newBikeCurrent").value);
+  const currentRaw = document.getElementById("newBikeCurrent").value.trim();
 
-  if (!name || !brand || Number.isNaN(year) || Number.isNaN(current)) return;
+  const year = Number(yearRaw);
+  const current = Number(currentRaw);
+
+  const missing = [];
+
+  if (!name) {
+    missing.push("Name");
+    markBikeFieldError("newBikeName");
+  }
+
+  if (!brand) {
+    missing.push("Hersteller");
+    markBikeFieldError("newBikeBrand");
+  }
+
+  if (!yearRaw || Number.isNaN(year)) {
+    missing.push("Baujahr");
+    markBikeFieldError("newBikeYear");
+  }
+
+  if (!currentRaw || Number.isNaN(current)) {
+    missing.push("aktueller Stand");
+    markBikeFieldError("newBikeCurrent");
+  }
+
+  if (missing.length) {
+    showBikeFormFeedback(`Bitte ausfüllen oder korrigieren: ${missing.join(", ")}.`);
+    return;
+  }
 
   const defaults = getCategoryDefaults(category);
-
   const type = manualType || defaults.type;
   const unit = manualUnit || defaults.unit;
 
@@ -684,8 +713,9 @@ function createBike() {
   document.getElementById("newBikeCurrent").value = "";
   document.getElementById("newBikeCategory").value = "motocross";
   document.getElementById("newBikeUnit").value = "h";
-}
 
+  clearBikeFormFeedback();
+}
 function deleteSelectedBike() {
   const bike = findBike(selectedBikeId);
   if (!bike) return;
