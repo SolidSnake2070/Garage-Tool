@@ -227,12 +227,21 @@
         <button id="closeCustomServiceModalBtn" class="ghost-btn">Schließen</button>
       </div>
 
-      <div class="form-grid">
-        <input id="customServiceName" class="field" type="text" placeholder="Was wurde gemacht? z. B. Reifen gewechselt" />
-        <input id="customServiceDate" class="field" type="date" />
-        <input id="customServiceValue" class="field" type="number" step="0.1" placeholder="Stand" />
-        <textarea id="customServiceNote" class="field notes-small" placeholder="Notiz, Teile, Kosten, Auffälligkeiten ..."></textarea>
-      </div>
+<div class="form-grid">
+
+  <label class="field-label">Name der Wartung</label>
+  <input id="editIntervalName" class="field" type="text" placeholder="z.B. Ölwechsel" />
+
+  <label class="field-label" id="labelInterval">Intervall</label>
+  <input id="editIntervalValue" class="field" type="number" step="0.1" />
+
+  <label class="field-label" id="labelWarn">Warnung vorher</label>
+  <input id="editWarnBefore" class="field" type="number" step="0.1" />
+
+  <label class="field-label" id="labelLastDone">Zuletzt gemacht bei</label>
+  <input id="editLastDoneAt" class="field" type="number" step="0.1" />
+
+</div>
 
       <div id="customServiceFeedback" class="form-feedback hidden"></div>
 
