@@ -1,5 +1,5 @@
-const STORAGE_KEY = "garage-panel-top-end-v3";
-const CURRENT_DATA_VERSION = 3;
+const STORAGE_KEY = "garage-panel-top-end-v4";
+const CURRENT_DATA_VERSION = 4;
 
 const defaultState = {
   version: CURRENT_DATA_VERSION,
@@ -178,38 +178,25 @@ function migrateState(loadedState) {
   if (!migrated.version) migrated.version = 1;
   if (!Array.isArray(migrated.bikes)) migrated.bikes = [];
 
-  if (migrated.version < 2) {
-    migrated.bikes.forEach((bike) => {
-      if (!bike.category) {
-        bike.category = bike.unit === "h" ? "motocross" : "motorcycle";
-      }
-
-      if (!bike.reference) {
-        bike.reference = {
-          engineType: "",
-          displacement: "",
-          oilType: "",
-          oilAmount: "",
-          filterPart: "",
-          importantNotes: ""
-        };
-      }
-
-      if (!bike.quickAdds || !Array.isArray(bike.quickAdds)) {
-        bike.quickAdds = bike.unit === "h" ? [0.5, 1, 2, 5] : [100, 250, 500, 1000];
-      }
-
-      if (!bike.history) bike.history = [];
-      if (!bike.serviceTemplates) bike.serviceTemplates = [];
-      if (!bike.notes) bike.notes = "";
-    });
-
-    migrated.version = 2;
-  }
-
-  if (migrated.version < 3) {
-    migrated.version = 3;
-  }
+  migrated.bikes.forEach((bike) => {
+    if (!bike.category) bike.category = bike.unit === "h" ? "motocross" : "motorcycle";
+    if (!bike.reference) {
+      bike.reference = {
+        engineType: "",
+        displacement: "",
+        oilType: "",
+        oilAmount: "",
+        filterPart: "",
+        importantNotes: ""
+      };
+    }
+    if (!bike.quickAdds || !Array.isArray(bike.quickAdds)) {
+      bike.quickAdds = bike.unit === "h" ? [0.5, 1, 2, 5] : [100, 250, 500, 1000];
+    }
+    if (!bike.history) bike.history = [];
+    if (!bike.serviceTemplates) bike.serviceTemplates = [];
+    if (!bike.notes) bike.notes = "";
+  });
 
   migrated.version = CURRENT_DATA_VERSION;
   return migrated;
@@ -217,7 +204,6 @@ function migrateState(loadedState) {
 
 function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
-
   if (!raw) return deepClone(defaultState);
 
   try {
@@ -320,7 +306,6 @@ function renderPriorities() {
     .map(bike => {
       const nearest = getNearestService(bike);
       if (!nearest) return null;
-
       return {
         bike,
         nearest,
@@ -488,9 +473,11 @@ function renderHistory(bike) {
 
 function populateServiceSelect(bike) {
   const select = document.getElementById("serviceTypeSelect");
-  select.innerHTML = bike.serviceTemplates.length
+  const options = bike.serviceTemplates.length
     ? bike.serviceTemplates.map(t => `<option value="${t.key}">${t.name}</option>`).join("")
-    : `<option value="">Keine Wartungsvorlage vorhanden</option>`;
+    : "";
+
+  select.innerHTML = `<option value="">Freie Wartung</option>${options}`;
 }
 
 function renderReference(bike) {
@@ -525,6 +512,7 @@ function renderDetail() {
   document.getElementById("notesInput").value = bike.notes || "";
   document.getElementById("serviceValueInput").value = bike.current;
   document.getElementById("serviceDateInput").value = todayString();
+  document.getElementById("serviceCustomName").value = "";
 
   populateServiceSelect(bike);
   renderQuickButtons(bike);
@@ -579,19 +567,18 @@ function logService(isPlanned) {
   const date = document.getElementById("serviceDateInput").value || todayString();
   const note = document.getElementById("serviceNoteInput").value.trim();
   const selectedKey = document.getElementById("serviceTypeSelect").value;
+  const customName = document.getElementById("serviceCustomName").value.trim();
 
   if (Number.isNaN(value)) return;
 
- let serviceName = document.getElementById("serviceCustomName").value.trim() || "Freie Wartung";
+  let serviceName = customName || "Freie Wartung";
 
   if (isPlanned && selectedKey !== "") {
     const template = bike.serviceTemplates.find(t => t.key === selectedKey);
     if (!template) return;
+
     template.lastDoneAt = value;
     serviceName = template.name;
-  } else {
-    const option = document.getElementById("serviceTypeSelect");
-    serviceName = option.options[option.selectedIndex]?.text || "Freie Wartung";
   }
 
   bike.history.push({
@@ -605,6 +592,7 @@ function logService(isPlanned) {
   });
 
   bike.current = Math.max(bike.current, value);
+  document.getElementById("serviceCustomName").value = "";
   document.getElementById("serviceNoteInput").value = "";
 
   saveState();
@@ -641,17 +629,14 @@ function createBike() {
     missing.push("Name");
     markBikeFieldError("newBikeName");
   }
-
   if (!brand) {
     missing.push("Hersteller");
     markBikeFieldError("newBikeBrand");
   }
-
   if (!yearRaw || Number.isNaN(year)) {
     missing.push("Baujahr");
     markBikeFieldError("newBikeYear");
   }
-
   if (!currentRaw || Number.isNaN(current)) {
     missing.push("aktueller Stand");
     markBikeFieldError("newBikeCurrent");
@@ -709,7 +694,6 @@ function createBike() {
 
 function deleteSelectedBike() {
   const bike = findBike(selectedBikeId);
-
   if (!bike) {
     alert("Kein Fahrzeug ausgewählt.");
     return;
@@ -722,8 +706,6 @@ function deleteSelectedBike() {
   selectedBikeId = null;
   saveState();
   renderAll();
-
-  alert(`"${bike.name}" wurde gelöscht.`);
 }
 
 function openResearchModal() {
@@ -779,7 +761,6 @@ function importJson(file) {
   reader.onload = (event) => {
     try {
       const imported = JSON.parse(event.target.result);
-
       if (!imported.bikes || !Array.isArray(imported.bikes)) {
         alert("Ungültige Datei.");
         return;
@@ -831,16 +812,12 @@ function bindEvents() {
     });
   }
 
-  if (deleteBikeBtn) {
-    deleteBikeBtn.addEventListener("click", deleteSelectedBike);
-  }
-
+  if (deleteBikeBtn) deleteBikeBtn.addEventListener("click", deleteSelectedBike);
   if (saveCurrentBtn) saveCurrentBtn.addEventListener("click", saveCurrentValue);
   if (saveNotesBtn) saveNotesBtn.addEventListener("click", saveNotes);
   if (saveReferenceBtn) saveReferenceBtn.addEventListener("click", saveReference);
   if (logPlannedBtn) logPlannedBtn.addEventListener("click", () => logService(true));
   if (logCustomBtn) logCustomBtn.addEventListener("click", () => logService(false));
-
   if (addBikeBtn) addBikeBtn.addEventListener("click", openAddBikeModal);
   if (closeAddBikeModalBtn) closeAddBikeModalBtn.addEventListener("click", closeAddBikeModal);
   if (saveNewBikeBtn) saveNewBikeBtn.addEventListener("click", createBike);
@@ -850,7 +827,6 @@ function bindEvents() {
       const defaults = getCategoryDefaults(e.target.value);
       const typeField = document.getElementById("newBikeType");
       const unitField = document.getElementById("newBikeUnit");
-
       if (typeField) typeField.value = defaults.type;
       if (unitField) unitField.value = defaults.unit;
     });
