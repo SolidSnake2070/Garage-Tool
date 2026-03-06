@@ -1,62 +1,51 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<title>Garage Panel</title>
-<style>
-
-body{
-background:#0b0f14;
-color:#e9f1fb;
-font-family:Arial;
-padding:40px;
-}
-
-h1{
-letter-spacing:3px;
-}
-
-.panel{
-background:#121922;
-padding:20px;
-border-radius:10px;
-margin-bottom:20px;
-width:350px;
-}
-
-.value{
-font-size:28px;
-margin:10px 0;
-}
-
-.ok{color:#2ecc71}
-.warn{color:#f1c40f}
-.due{color:#e74c3c}
-
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garage Panel</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">SERVICE MONITOR</p>
+        <h1>GARAGE PANEL</h1>
+      </div>
+      <div class="syncbox">
+        <span class="sync-label">Speicher</span>
+        <span class="sync-value">Lokal im Browser</span>
+      </div>
+    </header>
 
-<h1>GARAGE PANEL</h1>
+    <main class="grid" id="bikeGrid"></main>
+  </div>
 
-<div class="panel">
-<h2>KX250F</h2>
-<div class="value">72 h</div>
-Ölwechsel: 77 h
-</div>
+  <template id="bike-card-template">
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <p class="card-type"></p>
+          <h2 class="card-title"></h2>
+        </div>
+        <div class="status-badge">OK</div>
+      </div>
 
-<div class="panel">
-<h2>KX85</h2>
-<div class="value">20.4 h</div>
-Kolben: 40 h
-</div>
+      <div class="main-value-row">
+        <label class="main-label"></label>
+        <input class="main-input" type="number" step="0.1" />
+      </div>
 
-<div class="panel">
-<h2>KTM 690</h2>
-<div class="value">46799 km</div>
-Ölwechsel: 50000 km
-</div>
+      <div class="service-list"></div>
 
+      <div class="card-footer">
+        <button class="save-btn">Speichern</button>
+        <span class="save-info">nicht gespeichert</span>
+      </div>
+    </section>
+  </template>
+
+  <script src="script.js"></script>
 </body>
 </html>
