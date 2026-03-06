@@ -598,6 +598,37 @@ function closeAddBikeModal() {
   document.getElementById("addBikeModal").classList.add("hidden");
 }
 
+function showBikeFormFeedback(message) {
+  const box = document.getElementById("newBikeFeedback");
+  if (!box) return;
+
+  box.textContent = message;
+  box.classList.remove("hidden");
+}
+
+function clearBikeFormFeedback() {
+  const box = document.getElementById("newBikeFeedback");
+  if (!box) return;
+
+  box.textContent = "";
+  box.classList.add("hidden");
+
+  [
+    "newBikeName",
+    "newBikeBrand",
+    "newBikeYear",
+    "newBikeCurrent"
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("field-error");
+  });
+}
+
+function markBikeFieldError(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add("field-error");
+}
+
 function createBike() {
   const name = document.getElementById("newBikeName").value.trim();
   const brand = document.getElementById("newBikeBrand").value.trim();
