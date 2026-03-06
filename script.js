@@ -865,6 +865,18 @@ function openEditIntervalModal(serviceKey) {
   if (!bike) return;
 
   const template = findTemplate(bike, serviceKey);
+  // Einheit anzeigen (km oder h)
+
+const unit = bike.unit === "km" ? "km" : "h";
+
+document.getElementById("labelInterval").textContent =
+  `Intervall (${unit})`;
+
+document.getElementById("labelWarn").textContent =
+  `Warnung vorher (${unit})`;
+
+document.getElementById("labelLastDone").textContent =
+  `Zuletzt gemacht bei (${unit})`;
   if (!template) return;
 
   clearEditIntervalFeedback();
