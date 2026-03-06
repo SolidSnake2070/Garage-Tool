@@ -518,6 +518,21 @@ button, input, select, textarea {
   margin-top: 14px;
 }
 
+.form-feedback {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(231, 76, 60, 0.35);
+  background: rgba(231, 76, 60, 0.08);
+  color: #ffb7b0;
+  font-size: 14px;
+}
+
+.field-error {
+  border-color: rgba(231, 76, 60, 0.7) !important;
+  box-shadow: 0 0 0 1px rgba(231, 76, 60, 0.2);
+}
+
 @media (max-width: 1100px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -552,18 +567,4 @@ button, input, select, textarea {
   .search-input {
     min-width: 0;
   }
-}
-.form-feedback {
-  margin-top: 12px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(231, 76, 60, 0.35);
-  background: rgba(231, 76, 60, 0.08);
-  color: #ffb7b0;
-  font-size: 14px;
-}
-
-.field-error {
-  border-color: rgba(231, 76, 60, 0.7) !important;
-  box-shadow: 0 0 0 1px rgba(231, 76, 60, 0.2);
 }
