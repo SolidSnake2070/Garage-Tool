@@ -1,5 +1,5 @@
-const STORAGE_KEY = "garage-panel-top-end-v4";
-const CURRENT_DATA_VERSION = 4;
+const STORAGE_KEY = "garage-panel-top-end-v5";
+const CURRENT_DATA_VERSION = 5;
 
 const defaultState = {
   version: CURRENT_DATA_VERSION,
@@ -99,6 +99,7 @@ const defaultState = {
 
 let state = loadState();
 let selectedBikeId = null;
+let editIntervalContext = { bikeId: null, serviceKey: null };
 
 function deepClone(obj) {
   return JSON.parse(JSON.stringify(obj));
@@ -222,6 +223,10 @@ function findBike(id) {
   return state.bikes.find(b => b.id === id);
 }
 
+function findTemplate(bike, key) {
+  return bike.serviceTemplates.find(t => t.key === key);
+}
+
 function formatValue(value, unit) {
   if (unit === "km") {
     return `${new Intl.NumberFormat("de-DE").format(value)} km`;
@@ -293,7 +298,47 @@ function clearBikeFormFeedback() {
   });
 }
 
-function markBikeFieldError(id) {
+function showCustomServiceFeedback(message) {
+  const box = document.getElementById("customServiceFeedback");
+  if (!box) return;
+  box.textContent = message;
+  box.classList.remove("hidden");
+}
+
+function clearCustomServiceFeedback() {
+  const box = document.getElementById("customServiceFeedback");
+  if (box) {
+    box.textContent = "";
+    box.classList.add("hidden");
+  }
+
+  ["customServiceName", "customServiceValue"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("field-error");
+  });
+}
+
+function showEditIntervalFeedback(message) {
+  const box = document.getElementById("editIntervalFeedback");
+  if (!box) return;
+  box.textContent = message;
+  box.classList.remove("hidden");
+}
+
+function clearEditIntervalFeedback() {
+  const box = document.getElementById("editIntervalFeedback");
+  if (box) {
+    box.textContent = "";
+    box.classList.add("hidden");
+  }
+
+  ["editIntervalName", "editIntervalValue", "editWarnBefore", "editLastDoneAt"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("field-error");
+  });
+}
+
+function markFieldError(id) {
   const el = document.getElementById(id);
   if (el) el.classList.add("field-error");
 }
@@ -434,11 +479,18 @@ function renderIntervals(bike) {
       </div>
       <div class="interval-meta">
         Zuletzt: ${formatValue(template.lastDoneAt, bike.unit)}<br>
-        Nächste Fälligkeit: ${formatValue(dueAt, bike.unit)}
+        Nächste Fälligkeit: ${formatValue(dueAt, bike.unit)}<br>
+        <span class="interval-state ${serviceStatus}">${stateLabel(serviceStatus)}</span>
       </div>
-      <div class="interval-state ${serviceStatus}">${stateLabel(serviceStatus)}</div>
+      <div class="interval-actions">
+        <button class="icon-btn edit-interval-btn" data-key="${template.key}" title="Intervall bearbeiten">✎</button>
+      </div>
     `;
     list.appendChild(row);
+  });
+
+  list.querySelectorAll(".edit-interval-btn").forEach((btn) => {
+    btn.addEventListener("click", () => openEditIntervalModal(btn.dataset.key));
   });
 }
 
@@ -477,7 +529,7 @@ function populateServiceSelect(bike) {
     ? bike.serviceTemplates.map(t => `<option value="${t.key}">${t.name}</option>`).join("")
     : "";
 
-  select.innerHTML = `<option value="">Freie Wartung</option>${options}`;
+  select.innerHTML = `<option value="">Vorlage wählen</option>${options}`;
 }
 
 function renderReference(bike) {
@@ -512,7 +564,7 @@ function renderDetail() {
   document.getElementById("notesInput").value = bike.notes || "";
   document.getElementById("serviceValueInput").value = bike.current;
   document.getElementById("serviceDateInput").value = todayString();
-  document.getElementById("serviceCustomName").value = "";
+  document.getElementById("serviceNoteInput").value = "";
 
   populateServiceSelect(bike);
   renderQuickButtons(bike);
@@ -559,40 +611,41 @@ function saveReference() {
   renderAll();
 }
 
-function logService(isPlanned) {
+function logPlannedService() {
   const bike = findBike(selectedBikeId);
   if (!bike) return;
 
+  const selectedKey = document.getElementById("serviceTypeSelect").value;
   const value = Number(document.getElementById("serviceValueInput").value);
   const date = document.getElementById("serviceDateInput").value || todayString();
   const note = document.getElementById("serviceNoteInput").value.trim();
-  const selectedKey = document.getElementById("serviceTypeSelect").value;
-  const customName = document.getElementById("serviceCustomName").value.trim();
 
-  if (Number.isNaN(value)) return;
-
-  let serviceName = customName || "Freie Wartung";
-
-  if (isPlanned && selectedKey !== "") {
-    const template = bike.serviceTemplates.find(t => t.key === selectedKey);
-    if (!template) return;
-
-    template.lastDoneAt = value;
-    serviceName = template.name;
+  if (!selectedKey) {
+    alert("Bitte zuerst eine Wartungsvorlage wählen.");
+    return;
   }
+
+  if (Number.isNaN(value)) {
+    alert("Bitte einen gültigen Stand eingeben.");
+    return;
+  }
+
+  const template = findTemplate(bike, selectedKey);
+  if (!template) return;
+
+  template.lastDoneAt = value;
 
   bike.history.push({
     id: crypto.randomUUID(),
     date,
-    kind: isPlanned ? "planned" : "custom",
+    kind: "planned",
     serviceKey: selectedKey,
-    serviceName,
+    serviceName: template.name,
     value,
     note
   });
 
   bike.current = Math.max(bike.current, value);
-  document.getElementById("serviceCustomName").value = "";
   document.getElementById("serviceNoteInput").value = "";
 
   saveState();
@@ -627,19 +680,19 @@ function createBike() {
 
   if (!name) {
     missing.push("Name");
-    markBikeFieldError("newBikeName");
+    markFieldError("newBikeName");
   }
   if (!brand) {
     missing.push("Hersteller");
-    markBikeFieldError("newBikeBrand");
+    markFieldError("newBikeBrand");
   }
   if (!yearRaw || Number.isNaN(year)) {
     missing.push("Baujahr");
-    markBikeFieldError("newBikeYear");
+    markFieldError("newBikeYear");
   }
   if (!currentRaw || Number.isNaN(current)) {
     missing.push("aktueller Stand");
-    markBikeFieldError("newBikeCurrent");
+    markFieldError("newBikeCurrent");
   }
 
   if (missing.length) {
@@ -744,6 +797,162 @@ function runCustomResearch() {
   openResearchQuery(queryText);
 }
 
+function openCustomServiceModal() {
+  const bike = findBike(selectedBikeId);
+  if (!bike) return;
+
+  clearCustomServiceFeedback();
+  document.getElementById("customServiceName").value = "";
+  document.getElementById("customServiceDate").value = todayString();
+  document.getElementById("customServiceValue").value = bike.current;
+  document.getElementById("customServiceNote").value = "";
+  document.getElementById("customServiceModal").classList.remove("hidden");
+}
+
+function closeCustomServiceModal() {
+  clearCustomServiceFeedback();
+  document.getElementById("customServiceModal").classList.add("hidden");
+}
+
+function saveCustomService() {
+  const bike = findBike(selectedBikeId);
+  if (!bike) return;
+
+  clearCustomServiceFeedback();
+
+  const name = document.getElementById("customServiceName").value.trim();
+  const date = document.getElementById("customServiceDate").value || todayString();
+  const valueRaw = document.getElementById("customServiceValue").value.trim();
+  const note = document.getElementById("customServiceNote").value.trim();
+  const value = Number(valueRaw);
+
+  const missing = [];
+
+  if (!name) {
+    missing.push("Service-Name");
+    markFieldError("customServiceName");
+  }
+
+  if (!valueRaw || Number.isNaN(value)) {
+    missing.push("Stand");
+    markFieldError("customServiceValue");
+  }
+
+  if (missing.length) {
+    showCustomServiceFeedback(`Bitte ausfüllen oder korrigieren: ${missing.join(", ")}.`);
+    return;
+  }
+
+  bike.history.push({
+    id: crypto.randomUUID(),
+    date,
+    kind: "custom",
+    serviceKey: "",
+    serviceName: name,
+    value,
+    note
+  });
+
+  bike.current = Math.max(bike.current, value);
+
+  saveState();
+  renderAll();
+  closeCustomServiceModal();
+}
+
+function openEditIntervalModal(serviceKey) {
+  const bike = findBike(selectedBikeId);
+  if (!bike) return;
+
+  const template = findTemplate(bike, serviceKey);
+  if (!template) return;
+
+  clearEditIntervalFeedback();
+  editIntervalContext = { bikeId: bike.id, serviceKey: template.key };
+
+  document.getElementById("editIntervalName").value = template.name;
+  document.getElementById("editIntervalValue").value = template.interval;
+  document.getElementById("editWarnBefore").value = template.warnBefore;
+  document.getElementById("editLastDoneAt").value = template.lastDoneAt;
+
+  document.getElementById("editIntervalModal").classList.remove("hidden");
+}
+
+function closeEditIntervalModal() {
+  clearEditIntervalFeedback();
+  editIntervalContext = { bikeId: null, serviceKey: null };
+  document.getElementById("editIntervalModal").classList.add("hidden");
+}
+
+function saveEditedInterval() {
+  const bike = findBike(editIntervalContext.bikeId);
+  if (!bike) return;
+
+  const template = findTemplate(bike, editIntervalContext.serviceKey);
+  if (!template) return;
+
+  clearEditIntervalFeedback();
+
+  const name = document.getElementById("editIntervalName").value.trim();
+  const intervalRaw = document.getElementById("editIntervalValue").value.trim();
+  const warnRaw = document.getElementById("editWarnBefore").value.trim();
+  const lastDoneRaw = document.getElementById("editLastDoneAt").value.trim();
+
+  const interval = Number(intervalRaw);
+  const warnBefore = Number(warnRaw);
+  const lastDoneAt = Number(lastDoneRaw);
+
+  const missing = [];
+
+  if (!name) {
+    missing.push("Name");
+    markFieldError("editIntervalName");
+  }
+  if (!intervalRaw || Number.isNaN(interval)) {
+    missing.push("Intervall");
+    markFieldError("editIntervalValue");
+  }
+  if (!warnRaw || Number.isNaN(warnBefore)) {
+    missing.push("Warnung vorher");
+    markFieldError("editWarnBefore");
+  }
+  if (!lastDoneRaw || Number.isNaN(lastDoneAt)) {
+    missing.push("Zuletzt gemacht bei");
+    markFieldError("editLastDoneAt");
+  }
+
+  if (missing.length) {
+    showEditIntervalFeedback(`Bitte ausfüllen oder korrigieren: ${missing.join(", ")}.`);
+    return;
+  }
+
+  template.name = name;
+  template.interval = interval;
+  template.warnBefore = warnBefore;
+  template.lastDoneAt = lastDoneAt;
+
+  saveState();
+  renderAll();
+  closeEditIntervalModal();
+}
+
+function deleteEditedInterval() {
+  const bike = findBike(editIntervalContext.bikeId);
+  if (!bike) return;
+
+  const template = findTemplate(bike, editIntervalContext.serviceKey);
+  if (!template) return;
+
+  const confirmed = window.confirm(`Intervall "${template.name}" wirklich löschen?`);
+  if (!confirmed) return;
+
+  bike.serviceTemplates = bike.serviceTemplates.filter(t => t.key !== template.key);
+
+  saveState();
+  renderAll();
+  closeEditIntervalModal();
+}
+
 function exportJson() {
   state.version = CURRENT_DATA_VERSION;
 
@@ -792,7 +1001,7 @@ function bindEvents() {
   const saveNotesBtn = document.getElementById("saveNotesBtn");
   const saveReferenceBtn = document.getElementById("saveReferenceBtn");
   const logPlannedBtn = document.getElementById("logPlannedBtn");
-  const logCustomBtn = document.getElementById("logCustomBtn");
+  const openCustomServiceBtn = document.getElementById("openCustomServiceBtn");
   const addBikeBtn = document.getElementById("addBikeBtn");
   const closeAddBikeModalBtn = document.getElementById("closeAddBikeModalBtn");
   const saveNewBikeBtn = document.getElementById("saveNewBikeBtn");
@@ -802,6 +1011,13 @@ function bindEvents() {
   const runCustomResearchBtn = document.getElementById("runCustomResearchBtn");
   const exportBtn = document.getElementById("exportBtn");
   const importInput = document.getElementById("importInput");
+
+  const closeCustomServiceModalBtn = document.getElementById("closeCustomServiceModalBtn");
+  const saveCustomServiceBtn = document.getElementById("saveCustomServiceBtn");
+
+  const closeEditIntervalModalBtn = document.getElementById("closeEditIntervalModalBtn");
+  const saveEditIntervalBtn = document.getElementById("saveEditIntervalBtn");
+  const deleteIntervalBtn = document.getElementById("deleteIntervalBtn");
 
   if (searchInput) searchInput.addEventListener("input", renderDashboard);
 
@@ -816,8 +1032,9 @@ function bindEvents() {
   if (saveCurrentBtn) saveCurrentBtn.addEventListener("click", saveCurrentValue);
   if (saveNotesBtn) saveNotesBtn.addEventListener("click", saveNotes);
   if (saveReferenceBtn) saveReferenceBtn.addEventListener("click", saveReference);
-  if (logPlannedBtn) logPlannedBtn.addEventListener("click", () => logService(true));
-  if (logCustomBtn) logCustomBtn.addEventListener("click", () => logService(false));
+  if (logPlannedBtn) logPlannedBtn.addEventListener("click", logPlannedService);
+  if (openCustomServiceBtn) openCustomServiceBtn.addEventListener("click", openCustomServiceModal);
+
   if (addBikeBtn) addBikeBtn.addEventListener("click", openAddBikeModal);
   if (closeAddBikeModalBtn) closeAddBikeModalBtn.addEventListener("click", closeAddBikeModal);
   if (saveNewBikeBtn) saveNewBikeBtn.addEventListener("click", createBike);
@@ -860,6 +1077,13 @@ function bindEvents() {
       e.target.value = "";
     });
   }
+
+  if (closeCustomServiceModalBtn) closeCustomServiceModalBtn.addEventListener("click", closeCustomServiceModal);
+  if (saveCustomServiceBtn) saveCustomServiceBtn.addEventListener("click", saveCustomService);
+
+  if (closeEditIntervalModalBtn) closeEditIntervalModalBtn.addEventListener("click", closeEditIntervalModal);
+  if (saveEditIntervalBtn) saveEditIntervalBtn.addEventListener("click", saveEditedInterval);
+  if (deleteIntervalBtn) deleteIntervalBtn.addEventListener("click", deleteEditedInterval);
 }
 
 bindEvents();
