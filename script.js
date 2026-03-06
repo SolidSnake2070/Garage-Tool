@@ -582,7 +582,7 @@ function logService(isPlanned) {
 
   if (Number.isNaN(value)) return;
 
-  let serviceName = "Freie Wartung";
+ let serviceName = document.getElementById("serviceCustomName").value.trim() || "Freie Wartung";
 
   if (isPlanned && selectedKey) {
     const template = bike.serviceTemplates.find(t => t.key === selectedKey);
