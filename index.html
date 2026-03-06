@@ -197,7 +197,7 @@
   <div id="researchModal" class="modal hidden">
     <div class="modal-card">
       <div class="modal-head">
-        <h3 id="researchTitle">Research</h3>
+        <h3 id="researchTitle">Websuche</h3>
         <button id="closeResearchModalBtn" class="ghost-btn">Schließen</button>
       </div>
 
@@ -249,12 +249,19 @@
         <button id="closeEditIntervalModalBtn" class="ghost-btn">Schließen</button>
       </div>
 
-      <div class="form-grid">
-        <input id="editIntervalName" class="field" type="text" placeholder="Name" />
-        <input id="editIntervalValue" class="field" type="number" step="0.1" placeholder="Intervall" />
-        <input id="editWarnBefore" class="field" type="number" step="0.1" placeholder="Warnung vorher" />
-        <input id="editLastDoneAt" class="field" type="number" step="0.1" placeholder="Zuletzt gemacht bei" />
-      </div>
+<div class="form-grid">
+  <label class="field-label" for="editIntervalName">Name der Wartung</label>
+  <input id="editIntervalName" class="field" type="text" placeholder="Name" />
+
+  <label class="field-label" for="editIntervalValue">Intervall</label>
+  <input id="editIntervalValue" class="field" type="number" step="0.1" placeholder="Intervall" />
+
+  <label class="field-label" for="editWarnBefore">Warnung vorher</label>
+  <input id="editWarnBefore" class="field" type="number" step="0.1" placeholder="Warnung vorher" />
+
+  <label class="field-label" for="editLastDoneAt">Zuletzt gemacht bei</label>
+  <input id="editLastDoneAt" class="field" type="number" step="0.1" placeholder="Zuletzt gemacht bei" />
+</div>
 
       <div id="editIntervalFeedback" class="form-feedback hidden"></div>
 
