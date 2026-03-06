@@ -117,6 +117,7 @@ button, input, select, textarea {
   border-radius: 999px;
   margin-right: 8px;
 }
+
 .dot.ok { background: var(--ok); }
 .dot.warn { background: var(--warn); }
 .dot.due { background: var(--due); }
@@ -365,9 +366,20 @@ button, input, select, textarea {
   justify-content: center;
 }
 
+.import-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .ghost-btn:hover,
 .quick-btn:hover {
   border-color: rgba(89, 184, 255, 0.45);
+}
+
+.danger-btn {
+  border-color: rgba(231, 76, 60, 0.45);
+  color: #ffb7b0;
 }
 
 .notes-input,
