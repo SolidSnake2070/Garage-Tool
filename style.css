@@ -343,7 +343,8 @@ button, input, select, textarea {
 
 .quick-btn,
 .primary-btn,
-.ghost-btn {
+.ghost-btn,
+.icon-btn {
   border-radius: 12px;
   padding: 11px 14px;
   cursor: pointer;
@@ -357,7 +358,8 @@ button, input, select, textarea {
 }
 
 .ghost-btn,
-.quick-btn {
+.quick-btn,
+.icon-btn {
   border: 1px solid var(--line);
   background: rgba(255,255,255,0.03);
   color: var(--text);
@@ -372,8 +374,15 @@ button, input, select, textarea {
   justify-content: center;
 }
 
+.icon-btn {
+  padding: 8px 10px;
+  min-width: 40px;
+  font-size: 16px;
+}
+
 .ghost-btn:hover,
-.quick-btn:hover {
+.quick-btn:hover,
+.icon-btn:hover {
   border-color: rgba(89, 184, 255, 0.45);
 }
 
@@ -396,6 +405,12 @@ button, input, select, textarea {
   margin-top: 12px;
 }
 
+.modal-action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .interval-list,
 .history-list {
   display: grid;
@@ -412,7 +427,7 @@ button, input, select, textarea {
 
 .interval-row {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 90px;
+  grid-template-columns: 1.2fr 1fr 110px;
   gap: 12px;
   align-items: center;
 }
@@ -424,6 +439,11 @@ button, input, select, textarea {
 .interval-meta {
   color: var(--muted);
   font-size: 14px;
+}
+
+.interval-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .interval-state {
@@ -560,7 +580,9 @@ button, input, select, textarea {
     grid-template-columns: 1fr;
   }
 
+  .interval-actions,
   .interval-state {
+    justify-content: flex-start;
     text-align: left;
   }
 
