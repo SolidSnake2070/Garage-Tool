@@ -1,5 +1,5 @@
-const STORAGE_KEY = "garage-panel-top-end-v2";
-const CURRENT_DATA_VERSION = 2;
+const STORAGE_KEY = "garage-panel-top-end-v3";
+const CURRENT_DATA_VERSION = 3;
 
 const defaultState = {
   version: CURRENT_DATA_VERSION,
@@ -175,13 +175,8 @@ function getCategoryDefaults(category) {
 function migrateState(loadedState) {
   const migrated = deepClone(loadedState);
 
-  if (!migrated.version) {
-    migrated.version = 1;
-  }
-
-  if (!Array.isArray(migrated.bikes)) {
-    migrated.bikes = [];
-  }
+  if (!migrated.version) migrated.version = 1;
+  if (!Array.isArray(migrated.bikes)) migrated.bikes = [];
 
   if (migrated.version < 2) {
     migrated.bikes.forEach((bike) => {
@@ -212,6 +207,10 @@ function migrateState(loadedState) {
     migrated.version = 2;
   }
 
+  if (migrated.version < 3) {
+    migrated.version = 3;
+  }
+
   migrated.version = CURRENT_DATA_VERSION;
   return migrated;
 }
@@ -219,13 +218,10 @@ function migrateState(loadedState) {
 function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
 
-  if (!raw) {
-    return deepClone(defaultState);
-  }
+  if (!raw) return deepClone(defaultState);
 
   try {
-    const parsed = JSON.parse(raw);
-    return migrateState(parsed);
+    return migrateState(JSON.parse(raw));
   } catch {
     return deepClone(defaultState);
   }
@@ -266,7 +262,6 @@ function getOverallBikeState(bike) {
   if (!bike.serviceTemplates.length) return "ok";
 
   const states = bike.serviceTemplates.map(t => getServiceState(bike.current, t));
-
   if (states.includes("due")) return "due";
   if (states.includes("warn")) return "warn";
   return "ok";
@@ -290,6 +285,31 @@ function getNearestService(bike) {
 
   enriched.sort((a, b) => a.remaining - b.remaining);
   return enriched[0];
+}
+
+function showBikeFormFeedback(message) {
+  const box = document.getElementById("newBikeFeedback");
+  if (!box) return;
+  box.textContent = message;
+  box.classList.remove("hidden");
+}
+
+function clearBikeFormFeedback() {
+  const box = document.getElementById("newBikeFeedback");
+  if (box) {
+    box.textContent = "";
+    box.classList.add("hidden");
+  }
+
+  ["newBikeName", "newBikeBrand", "newBikeYear", "newBikeCurrent"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("field-error");
+  });
+}
+
+function markBikeFieldError(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add("field-error");
 }
 
 function renderPriorities() {
@@ -334,13 +354,10 @@ function renderDashboard() {
   grid.innerHTML = "";
 
   const bikes = state.bikes.filter(b =>
-    [
-      b.name,
-      b.brand,
-      String(b.year),
-      b.type,
-      getCategoryLabel(b.category)
-    ].join(" ").toLowerCase().includes(query)
+    [b.name, b.brand, String(b.year), b.type, getCategoryLabel(b.category)]
+      .join(" ")
+      .toLowerCase()
+      .includes(query)
   );
 
   if (!bikes.length) {
@@ -364,20 +381,24 @@ function renderDashboard() {
       </div>
 
       <div class="main-metric">
-        <div class="metric-value">${bike.unit === "km"
-          ? new Intl.NumberFormat("de-DE").format(bike.current)
-          : new Intl.NumberFormat("de-DE", {
-              minimumFractionDigits: bike.current % 1 === 0 ? 0 : 1,
-              maximumFractionDigits: 1
-            }).format(bike.current)}</div>
+        <div class="metric-value">${
+          bike.unit === "km"
+            ? new Intl.NumberFormat("de-DE").format(bike.current)
+            : new Intl.NumberFormat("de-DE", {
+                minimumFractionDigits: bike.current % 1 === 0 ? 0 : 1,
+                maximumFractionDigits: 1
+              }).format(bike.current)
+        }</div>
         <div class="metric-unit">${bike.unit}</div>
       </div>
 
       <div class="next-service">
         <strong>${getCategoryLabel(bike.category)}</strong><br>
-        ${nearest
-          ? `Nächster Punkt: <strong>${nearest.name}</strong><br>Fällig bei <strong>${formatValue(nearest.dueAt, bike.unit)}</strong>`
-          : `Keine Intervalle definiert`}
+        ${
+          nearest
+            ? `Nächster Punkt: <strong>${nearest.name}</strong><br>Fällig bei <strong>${formatValue(nearest.dueAt, bike.unit)}</strong>`
+            : `Keine Intervalle definiert`
+        }
       </div>
     `;
 
@@ -591,42 +612,13 @@ function logService(isPlanned) {
 }
 
 function openAddBikeModal() {
+  clearBikeFormFeedback();
   document.getElementById("addBikeModal").classList.remove("hidden");
 }
 
 function closeAddBikeModal() {
+  clearBikeFormFeedback();
   document.getElementById("addBikeModal").classList.add("hidden");
-}
-
-function showBikeFormFeedback(message) {
-  const box = document.getElementById("newBikeFeedback");
-  if (!box) return;
-
-  box.textContent = message;
-  box.classList.remove("hidden");
-}
-
-function clearBikeFormFeedback() {
-  const box = document.getElementById("newBikeFeedback");
-  if (!box) return;
-
-  box.textContent = "";
-  box.classList.add("hidden");
-
-  [
-    "newBikeName",
-    "newBikeBrand",
-    "newBikeYear",
-    "newBikeCurrent"
-  ].forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove("field-error");
-  });
-}
-
-function markBikeFieldError(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.add("field-error");
 }
 
 function createBike() {
@@ -713,9 +705,8 @@ function createBike() {
   document.getElementById("newBikeCurrent").value = "";
   document.getElementById("newBikeCategory").value = "motocross";
   document.getElementById("newBikeUnit").value = "h";
-
-  clearBikeFormFeedback();
 }
+
 function deleteSelectedBike() {
   const bike = findBike(selectedBikeId);
 
@@ -729,7 +720,6 @@ function deleteSelectedBike() {
 
   state.bikes = state.bikes.filter(b => b.id !== selectedBikeId);
   selectedBikeId = null;
-
   saveState();
   renderAll();
 
@@ -814,34 +804,61 @@ function renderAll() {
 }
 
 function bindEvents() {
-  document.getElementById("searchInput").addEventListener("input", renderDashboard);
+  const searchInput = document.getElementById("searchInput");
+  const closeDetailBtn = document.getElementById("closeDetailBtn");
+  const deleteBikeBtn = document.getElementById("deleteBikeBtn");
+  const saveCurrentBtn = document.getElementById("saveCurrentBtn");
+  const saveNotesBtn = document.getElementById("saveNotesBtn");
+  const saveReferenceBtn = document.getElementById("saveReferenceBtn");
+  const logPlannedBtn = document.getElementById("logPlannedBtn");
+  const logCustomBtn = document.getElementById("logCustomBtn");
+  const addBikeBtn = document.getElementById("addBikeBtn");
+  const closeAddBikeModalBtn = document.getElementById("closeAddBikeModalBtn");
+  const saveNewBikeBtn = document.getElementById("saveNewBikeBtn");
+  const newBikeCategory = document.getElementById("newBikeCategory");
+  const researchBtn = document.getElementById("researchBtn");
+  const closeResearchModalBtn = document.getElementById("closeResearchModalBtn");
+  const runCustomResearchBtn = document.getElementById("runCustomResearchBtn");
+  const exportBtn = document.getElementById("exportBtn");
+  const importInput = document.getElementById("importInput");
 
-  document.getElementById("closeDetailBtn").addEventListener("click", () => {
-    selectedBikeId = null;
-    renderDetail();
-  });
+  if (searchInput) searchInput.addEventListener("input", renderDashboard);
 
-  document.getElementById("deleteBikeBtn").addEventListener("click", deleteSelectedBike);
+  if (closeDetailBtn) {
+    closeDetailBtn.addEventListener("click", () => {
+      selectedBikeId = null;
+      renderDetail();
+    });
+  }
 
-  document.getElementById("saveCurrentBtn").addEventListener("click", saveCurrentValue);
-  document.getElementById("saveNotesBtn").addEventListener("click", saveNotes);
-  document.getElementById("saveReferenceBtn").addEventListener("click", saveReference);
-  document.getElementById("logPlannedBtn").addEventListener("click", () => logService(true));
-  document.getElementById("logCustomBtn").addEventListener("click", () => logService(false));
+  if (deleteBikeBtn) {
+    deleteBikeBtn.addEventListener("click", deleteSelectedBike);
+  }
 
-  document.getElementById("addBikeBtn").addEventListener("click", openAddBikeModal);
-  document.getElementById("closeAddBikeModalBtn").addEventListener("click", closeAddBikeModal);
-  document.getElementById("saveNewBikeBtn").addEventListener("click", createBike);
+  if (saveCurrentBtn) saveCurrentBtn.addEventListener("click", saveCurrentValue);
+  if (saveNotesBtn) saveNotesBtn.addEventListener("click", saveNotes);
+  if (saveReferenceBtn) saveReferenceBtn.addEventListener("click", saveReference);
+  if (logPlannedBtn) logPlannedBtn.addEventListener("click", () => logService(true));
+  if (logCustomBtn) logCustomBtn.addEventListener("click", () => logService(false));
 
-  document.getElementById("newBikeCategory").addEventListener("change", (e) => {
-    const defaults = getCategoryDefaults(e.target.value);
-    document.getElementById("newBikeType").value = defaults.type;
-    document.getElementById("newBikeUnit").value = defaults.unit;
-  });
+  if (addBikeBtn) addBikeBtn.addEventListener("click", openAddBikeModal);
+  if (closeAddBikeModalBtn) closeAddBikeModalBtn.addEventListener("click", closeAddBikeModal);
+  if (saveNewBikeBtn) saveNewBikeBtn.addEventListener("click", createBike);
 
-  document.getElementById("researchBtn").addEventListener("click", openResearchModal);
-  document.getElementById("closeResearchModalBtn").addEventListener("click", closeResearchModal);
-  document.getElementById("runCustomResearchBtn").addEventListener("click", runCustomResearch);
+  if (newBikeCategory) {
+    newBikeCategory.addEventListener("change", (e) => {
+      const defaults = getCategoryDefaults(e.target.value);
+      const typeField = document.getElementById("newBikeType");
+      const unitField = document.getElementById("newBikeUnit");
+
+      if (typeField) typeField.value = defaults.type;
+      if (unitField) unitField.value = defaults.unit;
+    });
+  }
+
+  if (researchBtn) researchBtn.addEventListener("click", openResearchModal);
+  if (closeResearchModalBtn) closeResearchModalBtn.addEventListener("click", closeResearchModal);
+  if (runCustomResearchBtn) runCustomResearchBtn.addEventListener("click", runCustomResearch);
 
   document.querySelectorAll(".research-preset").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -858,13 +875,15 @@ function bindEvents() {
     });
   });
 
-  document.getElementById("exportBtn").addEventListener("click", exportJson);
+  if (exportBtn) exportBtn.addEventListener("click", exportJson);
 
-  document.getElementById("importInput").addEventListener("change", (e) => {
-    const file = e.target.files?.[0];
-    if (file) importJson(file);
-    e.target.value = "";
-  });
+  if (importInput) {
+    importInput.addEventListener("change", (e) => {
+      const file = e.target.files?.[0];
+      if (file) importJson(file);
+      e.target.value = "";
+    });
+  }
 }
 
 bindEvents();
