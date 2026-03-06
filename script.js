@@ -718,15 +718,22 @@ function createBike() {
 }
 function deleteSelectedBike() {
   const bike = findBike(selectedBikeId);
-  if (!bike) return;
+
+  if (!bike) {
+    alert("Kein Fahrzeug ausgewählt.");
+    return;
+  }
 
   const confirmed = window.confirm(`"${bike.name}" wirklich löschen?`);
   if (!confirmed) return;
 
   state.bikes = state.bikes.filter(b => b.id !== selectedBikeId);
   selectedBikeId = null;
+
   saveState();
   renderAll();
+
+  alert(`"${bike.name}" wurde gelöscht.`);
 }
 
 function openResearchModal() {
