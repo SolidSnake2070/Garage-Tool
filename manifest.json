@@ -1,6 +1,6 @@
 {
-  "name": "Garage Panel",
-  "short_name": "GaragePanel",
+  "name": "Garage Tool",
+  "short_name": "GarageTool",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#081019",
