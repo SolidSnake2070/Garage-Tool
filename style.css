@@ -595,12 +595,16 @@ button, input, select, textarea {
   color: var(--muted);
   margin-top: 6px;
 }
-.nav-link {
+.sidebar-link {
   text-decoration: none;
-  color: var(--text);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+}
+
+.sidebar-link:hover {
+  opacity: 0.8;
+  transform: translateX(2px); /* leichter Bewegungseffekt */
 }
 
 .full-width {
